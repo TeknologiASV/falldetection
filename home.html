@@ -62,7 +62,24 @@
       <div class="col-12">
         <div class="card">
           <div class="card-body">
-            <div id="tester" style="width:100%;height:auto"></div>
+            <div class="row">
+              <div class="col-6 col-md-3 text-center">
+                <input type="text" id="steps" class="knob" value="0" data-max="10000" data-width="200" data-height="200" data-fgColor="#3c8dbc" readonly>
+                <div class="knob-label">Steps</div>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <input type="text" id="distances" class="knob" value="0" data-max="10" data-width="150" data-height="150" data-fgColor="#f56954" readonly>
+                <div class="knob-label">Distance (km)</div>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <input type="text" id="calories" class="knob" value="0" data-max="1000" data-width="150" data-height="150" data-fgColor="#00a65a" readonly>
+                <div class="knob-label">Calories</div>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <input type="text" id="minutes" class="knob" value="0" data-max="1000" data-width="150" data-height="150" data-fgColor="#00c0ef" readonly>
+                <div class="knob-label">Minutes</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -76,69 +93,6 @@
 $(function () {
   var tempStart = formatDate(moment()) + " 00:00:00";
   var tempEnd = formatDate(moment()) + " 23:59:59";
-
-  var data2 = [{
-      x: [0,0,0,0,0],
-      y: [0,0,0,0,0],
-      z: [0,0,0,0,0],
-      mode: 'markers',
-      type: 'scatter3d',
-      marker: {
-        color: 'rgb(255,0,0)',
-        size: 5
-      }
-  },{
-      alphahull: 7,
-      opacity: 0.1,
-      type: 'mesh3d',
-      x: [0,0,0,0,0],
-      y: [0,0,0,0,0],
-      z: [0,0,0,0,0]
-  }];
-
-  var layout = {
-        autosize: true,
-        scene: {
-            aspectratio: {
-                x: 1,
-                y: 1,
-                z: 1
-            },
-            camera: {
-                center: {
-                    x: 0,
-                    y: 0,
-                    z: 0
-                },
-                eye: {
-                    x: 1.25,
-                    y: 1.25,
-                    z: 1.25
-                },
-                up: {
-                    x: 0,
-                    y: 0,
-                    z: 1
-                }
-            },
-            xaxis: {
-                type: 'linear',
-                zeroline: false
-            },
-            yaxis: {
-                type: 'linear',
-                zeroline: false
-            },
-            zaxis: {
-                type: 'linear',
-                zeroline: false
-            }
-        },
-        title: 'Point Clouds clustering'
-    };
-
-  TESTER = document.getElementById('tester');
-	Plotly.newPlot( TESTER, data2, layout );
 
   //Date range as a button
   $('#daterange-btn').daterangepicker(
@@ -155,40 +109,26 @@ $(function () {
       endDate  : moment()
     },
     function (start, end) {
-      debugger;
       var startFormatted = formatDate(start) + " 00:00:00";
       var endFormatted = formatDate(end) + " 23:59:59";
       tempStart = startFormatted;
       tempEnd = endFormatted;
       
-      $.post('php/getjonker.php', {startDate: startFormatted, endDate: endFormatted, exactStartDate: formatExact(new Date()), exactEndDate: formatExact(new Date())}, function(data){
+      $.post('php/getjonker.php', {startDate: startFormatted, endDate: endFormatted}, function(data){
         var obj = JSON.parse(data);
-        console.log(obj);
 
         if(obj.status === 'success'){
           $('#fallCount').html(obj.fallCount);
           $('#stepCount').html(obj.stepCount);
+          $("#steps").val(obj.stepCount);
+          $("#distances").val(parseFloat((obj.stepCount * 80)/100000).toFixed(2));
+          $("#calories").val(parseFloat(obj.stepCount * 0.045).toFixed(2));
+          $("#minutes").val(obj.minutes);
 
-          var data3 = [{
-              x: obj.message[0].x,
-              y: obj.message[0].y,
-              z: obj.message[0].z,
-              mode: 'markers',
-              type: 'scatter3d',
-              marker: {
-                color: 'rgb(255,0,0)',
-                size: 10
-              }
-          },{
-              alphahull: 7,
-              opacity: 0.1,
-              type: 'mesh3d',
-              x: obj.message[0].x,
-              y: obj.message[0].y,
-              z: obj.message[0].z
-          }];
-
-          Plotly.newPlot(document.getElementById('tester'), data3, layout);
+          $("#steps").trigger('change');
+          $("#distances").trigger('change');
+          $("#calories").trigger('change');
+          $("#minutes").trigger('change');
         }
         else if(obj.status === 'failed'){
           toastr["error"](obj.message, "Failed:");
@@ -200,34 +140,72 @@ $(function () {
     }
   );
 
+  $('.knob').knob({
+      draw: function () {
+        // "tron" case
+        if (this.$.data('skin') == 'tron') {
+
+          var a   = this.angle(this.cv)  // Angle
+            ,
+              sa  = this.startAngle          // Previous start angle
+            ,
+              sat = this.startAngle         // Start angle
+            ,
+              ea                            // Previous end angle
+            ,
+              eat = sat + a                 // End angle
+            ,
+              r   = true
+
+          this.g.lineWidth = this.lineWidth
+
+          this.o.cursor
+          && (sat = eat - 0.3)
+          && (eat = eat + 0.3)
+
+          if (this.o.displayPrevious) {
+            ea = this.startAngle + this.angle(this.value)
+            this.o.cursor
+            && (sa = ea - 0.3)
+            && (ea = ea + 0.3)
+            this.g.beginPath()
+            this.g.strokeStyle = this.previousColor
+            this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false)
+            this.g.stroke()
+          }
+
+          this.g.beginPath()
+          this.g.strokeStyle = r ? this.o.fgColor : this.fgColor
+          this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false)
+          this.g.stroke()
+
+          this.g.lineWidth = 2
+          this.g.beginPath()
+          this.g.strokeStyle = this.o.fgColor
+          this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false)
+          this.g.stroke()
+
+          return false
+        }
+      }
+    });
+
   setInterval(function () {
-    $.post('php/getjonker.php', {startDate: tempStart, endDate: tempEnd, exactStartDate: formatExact(new Date()), exactEndDate: formatExact(new Date())}, function(data){
+    $.post('php/getjonker.php', {startDate: tempStart, endDate: tempEnd}, function(data){
       var obj = JSON.parse(data);
 
       if(obj.status === 'success'){
         $('#fallCount').html(obj.fallCount);
         $('#stepCount').html(obj.stepCount);
+        $("#steps").val(obj.stepCount);
+        $("#distances").val(parseFloat((obj.stepCount * 80)/100000).toFixed(2));
+        $("#calories").val(parseFloat(obj.stepCount * 0.045).toFixed(2));
+        $("#minutes").val(obj.minutes);
 
-        var data3 = [{
-            x: obj.message[0].x,
-            y: obj.message[0].y,
-            z: obj.message[0].z,
-            mode: 'markers',
-            type: 'scatter3d',
-            marker: {
-              color: 'rgb(255,0,0)',
-              size: 10
-            }
-        },{
-            alphahull: 7,
-            opacity: 0.1,
-            type: 'mesh3d',
-            x: obj.message[0].x,
-            y: obj.message[0].y,
-            z: obj.message[0].z
-        }];
-
-        Plotly.newPlot(document.getElementById('tester'), data3, layout );
+        $("#steps").trigger('change');
+        $("#distances").trigger('change');
+        $("#calories").trigger('change');
+        $("#minutes").trigger('change');
       }
       else if(obj.status === 'failed'){
         toastr["error"](obj.message, "Failed:");
@@ -238,33 +216,21 @@ $(function () {
     });
   }, 1000);
   
-  $.post('php/getjonker.php', {startDate: tempStart, endDate: tempEnd, exactStartDate: formatExact(new Date()), exactEndDate: formatExact(new Date())}, function(data){
+  $.post('php/getjonker.php', {startDate: tempStart, endDate: tempEnd}, function(data){
     var obj = JSON.parse(data);
 
     if(obj.status === 'success'){
       $('#fallCount').html(obj.fallCount);
       $('#stepCount').html(obj.stepCount);
-      
-      var data3 = [{
-          x: obj.message[0].x,
-          y: obj.message[0].y,
-          z: obj.message[0].z,
-          mode: 'markers',
-          type: 'scatter3d',
-          marker: {
-            color: 'rgb(255,0,0)',
-            size: 10
-          }
-      },{
-          alphahull: 7,
-          opacity: 0.1,
-          type: 'mesh3d',
-          x: obj.message[0].x,
-          y: obj.message[0].y,
-          z: obj.message[0].z
-      }];
+      $("#steps").val(obj.stepCount);
+      $("#distances").val(parseFloat((obj.stepCount * 80)/100000).toFixed(2));
+      $("#calories").val(parseFloat(obj.stepCount * 0.045).toFixed(2));
+      $("#minutes").val(obj.minutes);
 
-      Plotly.newPlot(document.getElementById('tester'), data3, layout );
+      $("#steps").trigger('change');
+      $("#distances").trigger('change');
+      $("#calories").trigger('change');
+      $("#minutes").trigger('change');
     }
     else if(obj.status === 'failed'){
       toastr["error"](obj.message, "Failed:");
@@ -275,4 +241,3 @@ $(function () {
   });
 });
 </script>
-  

@@ -3,112 +3,55 @@ require_once "db_connect.php";
 
 session_start();
 
-if(isset($_POST['startDate'], $_POST['endDate'])){
-    $startDate = filter_input(INPUT_POST, 'startDate', FILTER_SANITIZE_STRING);
-    $endDate = filter_input(INPUT_POST, 'endDate', FILTER_SANITIZE_STRING);
-    $location = filter_input(INPUT_POST, 'location', FILTER_SANITIZE_STRING);
+if(isset($_POST['exactStartDate'], $_POST['exactEndDate'])){
+    $exactStartDate = filter_input(INPUT_POST, 'exactStartDate', FILTER_SANITIZE_STRING);
+    $exactEndDate = filter_input(INPUT_POST, 'exactEndDate', FILTER_SANITIZE_STRING);
+    $message = array();
 
-    if ($select_stmt = $db->prepare("SELECT * FROM Melaka_traffic WHERE Date>=? AND Date<=? ORDER BY Date")) {
-        $select_stmt->bind_param('ss', $startDate, $endDate);
+    if ($select_stmt3 = $db->prepare("SELECT * FROM pointCloud WHERE Date>=? AND Date<=? ORDER BY Date")) {
+        $select_stmt3->bind_param('ss', $exactStartDate, $exactEndDate);
         
         // Execute the prepared query.
-        if (! $select_stmt->execute()) {
-            echo json_encode(
-                array(
-                    "status" => "failed",
-                    "message" => "Something went wrong"
-                )); 
-        }
-        else{
-            $result = $select_stmt->get_result();
-            $message = array();
+        if ($select_stmt3->execute()) {
+            $result3 = $select_stmt3->get_result();
             $dateBar = array();
-            $ent1Count = 0;
-            $ent2Count = 0;
-            $ent3Count = 0;
-            $ent4Count = 0;
-            $ent5Count = 0;
-            $ent6Count = 0;
             
-            while ($row = $result->fetch_assoc()) {
-                if(!in_array(substr($row['Date'], 10, 3), $dateBar)){
+            while ($row3 = $result3->fetch_assoc()) {
+                if(!in_array(substr($row3['Date'], 10, 9), $dateBar)){
                     $message[] = array( 
-                        'Date' => substr($row['Date'], 10, 3).":00",
-                        'ent1Count' => 0,
-                        'ent2Count' => 0,
-                        'ent3Count' => 0,
-                        'ent4Count' => 0,
-                        'ent5Count' => 0,
-                        'ent6Count' => 0,
-                        'veh2Count' => 0,
-                        'veh7Count' => 0
+                        'Date' => substr($row3['Date'], 10, 9),
+                        'x' => array(),
+                        'y' => array(),
+                        'z' => array()
                     );
 
-                    array_push($dateBar, substr($row['Date'], 10, 3));
+                    array_push($dateBar, substr($row3['Date'], 10, 9));
+
+                    $key = array_search(substr($row3['Date'], 10, 9), $dateBar);
+                    array_push($message[$key]['x'], (float)$row3['x_point']);
+                    array_push($message[$key]['y'], (float)$row3['y_point']);
+                    array_push($message[$key]['z'], (float)$row3['z_point']);
                 }
 
-                $key = array_search(substr($row['Date'], 10, 3), $dateBar);
 
-                if($row['Place'] == 'Jonker'){
-                    if($row['Condition'] == 'PPL-in'){
-                        /*if($row['Device'] == 'jp1'){
-                            $message[$key]['ent1Count'] += (int)$row['Count'];
-                            $ent1Count += (int)$row['Count'];
-                        }
-                        else */if($row['Device'] == 'jp3'){
-                            $message[$key]['ent2Count'] += (int)$row['Count'];
-                            $ent2Count += (int)$row['Count'];
-
-                            $message[$key]['ent1Count'] += ceil((int)$row['Count'] * 16);
-                            $ent1Count += ceil((int)$row['Count'] * 16);
-
-                            $message[$key]['ent4Count'] += ceil((int)$row['Count'] * 0.5);
-                            $ent4Count += ceil((int)$row['Count'] * 0.5);
-
-                            $message[$key]['ent5Count'] += ceil((int)$row['Count'] * 5);
-                            $ent5Count += ceil((int)$row['Count'] * 5);
-
-                            $message[$key]['ent6Count'] += ceil((int)$row['Count'] * 13);
-                            $ent6Count += ceil((int)$row['Count'] * 13);
-                        }
-                        else if($row['Device'] == 'jp4'){
-                            $message[$key]['ent3Count'] += (int)$row['Count'];
-                            $ent3Count += (int)$row['Count'];
-                        }
-                        /*else if($row['Device'] == 'jp5'){
-                            $message[$key]['ent4Count'] += (int)$row['Count'];
-                            $ent4Count += (int)$row['Count'];
-                        }
-                        else if($row['Device'] == 'jp6'){
-                            $message[$key]['ent5Count'] += (int)$row['Count'];
-                            $ent5Count += (int)$row['Count'];
-                        }
-                        else if($row['Device'] == 'jp8'){
-                            $message[$key]['ent6Count'] += (int)$row['Count'];
-                            $ent6Count += (int)$row['Count'];
-                        }*/
-                    }
-                    else if($row['Condition'] == 'VCL-in'){
-                        if($row['Device'] == 'jp7'){
-                            $message[$key]['veh7Count'] += (int)$row['Count'];
-                        }
-                    }
-                }
-            }
+                /*$key = array_search(substr($row3['Date'], 10, 9), $dateBar);
+                array_push($message[$key]['x'], (float)$row3['x_point']);
+                array_push($message[$key]['y'], (float)$row3['y_point']);
+                array_push($message[$key]['z'], (float)$row3['z_point']);*/
+            } 
             
-            echo json_encode(
-                array(
-                    "status" => "success",
-                    "message" => $message,
-                    "ent1Count" => $ent1Count,
-                    "ent2Count" => $ent2Count,
-                    "ent3Count" => $ent3Count,
-                    "ent4Count" => $ent4Count,
-                    "ent5Count" => $ent5Count,
-                    "ent6Count" => $ent6Count,
-                ));   
+            $select_stmt3->close();
         }
     }
+
+    $db->close();
+
+    echo json_encode(
+        array(
+            "status" => "success",
+            "message" => $message
+        )
+    );  
 }
 else{
     echo json_encode(

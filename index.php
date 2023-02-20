@@ -80,13 +80,13 @@ if(!isset($_SESSION['userID'])){
               <p>Fall Detection</p>
             </a>
           </li>
-          <!--li class="nav-item">
-            <a href="#pasar" data-file="pasar.html" class="nav-link link" style="color: black;">
+          <li class="nav-item">
+            <a href="#visual" data-file="visual.html" class="nav-link link" style="color: black;">
               <i class="nav-icon fas fa-shopping-cart"></i>
-              <p>Pasar Melaka</p>
+              <p>Visualisation</p>
             </a>
           </li>
-          <li class="nav-item has-treeview">
+          <!--li class="nav-item has-treeview">
             <a href="#" class="nav-link" style="color: black;">
               <i class="nav-icon fas fa-cogs"></i>
               <p>Settings<i class="fas fa-angle-left right"></i></p>
@@ -156,6 +156,10 @@ if(!isset($_SESSION['userID'])){
 <!-- toastr -->
 <script src="plugins/toastr/toastr.min.js"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
+<!-- jQuery Knob -->
+<script src="plugins/jquery-knob/jquery.knob.min.js"></script>
+<!-- Sparkline -->
+<script src="plugins/sparklines/sparkline.js"></script>
 <script src="dist/js/pages/dashboard3.js"></script>
 <script>
 $(function () {
