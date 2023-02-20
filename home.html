@@ -1,0 +1,278 @@
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1 class="m-0">Fall Detection</h1>
+      </div><!-- /.col -->
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="#">Home</a></li>
+          <li class="breadcrumb-item active">Fall Detection</li>
+        </ol>
+      </div><!-- /.col -->
+    </div><!-- /.row -->
+  </div><!-- /.container-fluid -->
+</div>
+<!-- /.content-header -->
+
+<!-- Main content -->
+<div class="content">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="form-group">
+              <label>Date range button:</label>
+    
+              <div class="input-group">
+                <button type="button" class="btn btn-default float-right" id="daterange-btn">
+                  <i class="far fa-calendar-alt"></i> Date range picker
+                  <i class="fas fa-caret-down"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-6">
+        <div class="info-box">
+          <span class="info-box-icon bg-warning"><i class="far fa-copy"></i></span>
+          <div class="info-box-content">
+            <div class="info-box-content">
+              <span class="info-box-text">Fall Count</span>
+              <span class="info-box-number" id="fallCount">No Data</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="info-box">
+          <span class="info-box-icon bg-warning"><i class="far fa-copy"></i></span>
+          <div class="info-box-content">
+            <span class="info-box-text">Steps Count</span>
+            <span class="info-box-number" id="stepCount">No Data</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div id="tester" style="width:100%;height:auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /.container-fluid -->
+</div>
+<!-- /.content -->
+
+<script>
+$(function () {
+  var tempStart = formatDate(moment()) + " 00:00:00";
+  var tempEnd = formatDate(moment()) + " 23:59:59";
+
+  var data2 = [{
+      x: [0,0,0,0,0],
+      y: [0,0,0,0,0],
+      z: [0,0,0,0,0],
+      mode: 'markers',
+      type: 'scatter3d',
+      marker: {
+        color: 'rgb(255,0,0)',
+        size: 5
+      }
+  },{
+      alphahull: 7,
+      opacity: 0.1,
+      type: 'mesh3d',
+      x: [0,0,0,0,0],
+      y: [0,0,0,0,0],
+      z: [0,0,0,0,0]
+  }];
+
+  var layout = {
+        autosize: true,
+        scene: {
+            aspectratio: {
+                x: 1,
+                y: 1,
+                z: 1
+            },
+            camera: {
+                center: {
+                    x: 0,
+                    y: 0,
+                    z: 0
+                },
+                eye: {
+                    x: 1.25,
+                    y: 1.25,
+                    z: 1.25
+                },
+                up: {
+                    x: 0,
+                    y: 0,
+                    z: 1
+                }
+            },
+            xaxis: {
+                type: 'linear',
+                zeroline: false
+            },
+            yaxis: {
+                type: 'linear',
+                zeroline: false
+            },
+            zaxis: {
+                type: 'linear',
+                zeroline: false
+            }
+        },
+        title: 'Point Clouds clustering'
+    };
+
+  TESTER = document.getElementById('tester');
+	Plotly.newPlot( TESTER, data2, layout );
+
+  //Date range as a button
+  $('#daterange-btn').daterangepicker(
+    {
+      ranges   : {
+        'Today'       : [moment(), moment()],
+        'Yesterday'   : [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+        'Last 7 Days' : [moment().subtract(6, 'days'), moment()],
+        'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+        'This Month'  : [moment().startOf('month'), moment().endOf('month')],
+        'Last Month'  : [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+      },
+      startDate: moment(),
+      endDate  : moment()
+    },
+    function (start, end) {
+      debugger;
+      var startFormatted = formatDate(start) + " 00:00:00";
+      var endFormatted = formatDate(end) + " 23:59:59";
+      tempStart = startFormatted;
+      tempEnd = endFormatted;
+      
+      $.post('php/getjonker.php', {startDate: startFormatted, endDate: endFormatted, exactStartDate: formatExact(new Date()), exactEndDate: formatExact(new Date())}, function(data){
+        var obj = JSON.parse(data);
+        console.log(obj);
+
+        if(obj.status === 'success'){
+          $('#fallCount').html(obj.fallCount);
+          $('#stepCount').html(obj.stepCount);
+
+          var data3 = [{
+              x: obj.message[0].x,
+              y: obj.message[0].y,
+              z: obj.message[0].z,
+              mode: 'markers',
+              type: 'scatter3d',
+              marker: {
+                color: 'rgb(255,0,0)',
+                size: 10
+              }
+          },{
+              alphahull: 7,
+              opacity: 0.1,
+              type: 'mesh3d',
+              x: obj.message[0].x,
+              y: obj.message[0].y,
+              z: obj.message[0].z
+          }];
+
+          Plotly.newPlot(document.getElementById('tester'), data3, layout);
+        }
+        else if(obj.status === 'failed'){
+          toastr["error"](obj.message, "Failed:");
+        }
+        else{
+          toastr["error"]("Something wrong when geting data", "Failed:");
+        }
+      });
+    }
+  );
+
+  setInterval(function () {
+    $.post('php/getjonker.php', {startDate: tempStart, endDate: tempEnd, exactStartDate: formatExact(new Date()), exactEndDate: formatExact(new Date())}, function(data){
+      var obj = JSON.parse(data);
+
+      if(obj.status === 'success'){
+        $('#fallCount').html(obj.fallCount);
+        $('#stepCount').html(obj.stepCount);
+
+        var data3 = [{
+            x: obj.message[0].x,
+            y: obj.message[0].y,
+            z: obj.message[0].z,
+            mode: 'markers',
+            type: 'scatter3d',
+            marker: {
+              color: 'rgb(255,0,0)',
+              size: 10
+            }
+        },{
+            alphahull: 7,
+            opacity: 0.1,
+            type: 'mesh3d',
+            x: obj.message[0].x,
+            y: obj.message[0].y,
+            z: obj.message[0].z
+        }];
+
+        Plotly.newPlot(document.getElementById('tester'), data3, layout );
+      }
+      else if(obj.status === 'failed'){
+        toastr["error"](obj.message, "Failed:");
+      }
+      else{
+        toastr["error"]("Something wrong when geting data", "Failed:");
+      }
+    });
+  }, 1000);
+  
+  $.post('php/getjonker.php', {startDate: tempStart, endDate: tempEnd, exactStartDate: formatExact(new Date()), exactEndDate: formatExact(new Date())}, function(data){
+    var obj = JSON.parse(data);
+
+    if(obj.status === 'success'){
+      $('#fallCount').html(obj.fallCount);
+      $('#stepCount').html(obj.stepCount);
+      
+      var data3 = [{
+          x: obj.message[0].x,
+          y: obj.message[0].y,
+          z: obj.message[0].z,
+          mode: 'markers',
+          type: 'scatter3d',
+          marker: {
+            color: 'rgb(255,0,0)',
+            size: 10
+          }
+      },{
+          alphahull: 7,
+          opacity: 0.1,
+          type: 'mesh3d',
+          x: obj.message[0].x,
+          y: obj.message[0].y,
+          z: obj.message[0].z
+      }];
+
+      Plotly.newPlot(document.getElementById('tester'), data3, layout );
+    }
+    else if(obj.status === 'failed'){
+      toastr["error"](obj.message, "Failed:");
+    }
+    else{
+      toastr["error"]("Something wrong when geting data", "Failed:");
+    }
+  });
+});
+</script>
+  
