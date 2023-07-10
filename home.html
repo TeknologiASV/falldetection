@@ -37,9 +37,9 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-6">
-        <div class="info-box">
-          <span class="info-box-icon bg-warning"><i class="far fa-copy"></i></span>
+      <div class="col-8">
+        <div class="info-box" style="min-height: 110px;">
+          <span class="info-box-icon bg-warning" id="fallCountIcon"><i class="fas fa-user-injured"></i></span>
           <div class="info-box-content">
             <div class="info-box-content">
               <span class="info-box-text">Fall Count</span>
@@ -48,9 +48,9 @@
           </div>
         </div>
       </div>
-      <div class="col-6">
+      <div class="col-4">
         <div class="info-box">
-          <span class="info-box-icon bg-warning"><i class="far fa-copy"></i></span>
+          <span class="info-box-icon bg-warning"><i class="fas fa-shoe-prints"></i></span>
           <div class="info-box-content">
             <span class="info-box-text">Steps Count</span>
             <span class="info-box-number" id="stepCount">No Data</span>
@@ -93,6 +93,7 @@
 $(function () {
   var tempStart = formatDate(moment()) + " 00:00:00";
   var tempEnd = formatDate(moment()) + " 23:59:59";
+  var fallCount = 0;
 
   //Date range as a button
   $('#daterange-btn').daterangepicker(
@@ -118,6 +119,7 @@ $(function () {
         var obj = JSON.parse(data);
 
         if(obj.status === 'success'){
+          fallCount = obj.fallCount;
           $('#fallCount').html(obj.fallCount);
           $('#stepCount').html(obj.stepCount);
           $("#steps").val(obj.stepCount);
@@ -206,6 +208,11 @@ $(function () {
         $("#distances").trigger('change');
         $("#calories").trigger('change');
         $("#minutes").trigger('change');
+
+        if(fallCount < obj.fallCount){
+          setInterval(blinkElement, 2000);
+          fallCount = obj.fallCount;
+        }
       }
       else if(obj.status === 'failed'){
         toastr["error"](obj.message, "Failed:");
@@ -220,6 +227,7 @@ $(function () {
     var obj = JSON.parse(data);
 
     if(obj.status === 'success'){
+      fallCount = obj.fallCount;
       $('#fallCount').html(obj.fallCount);
       $('#stepCount').html(obj.stepCount);
       $("#steps").val(obj.stepCount);
@@ -240,4 +248,12 @@ $(function () {
     }
   });
 });
+
+function blinkElement() {
+  $('#fallCountIcon').attr('class', 'info-box-icon bg-danger');
+
+  setTimeout(function(){
+    $('#fallCountIcon').attr('class', 'info-box-icon bg-warning');
+  }, 1000);
+}
 </script>
